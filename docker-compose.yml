@@ -1,0 +1,66 @@
+version: '3.8'
+services:
+  hadoop:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop
+    environment:
+      - CLUSTER_NAME=hadoop-cluster
+    ports:
+      - "9870:9870" # HDFS web UI
+      - "8088:8088" # YARN ResourceManager
+    networks:
+      - bigdata-net
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hivepassword
+      POSTGRES_DB: metastore
+    ports:
+      - "5432:5432"
+    networks:
+      - bigdata-net
+
+  hive-metastore:
+    image: bde2020/hive-metastore-postgresql:2.3.7
+    container_name: hive-metastore
+    environment:
+      HIVE_METASTORE_DB_TYPE: postgres
+      HIVE_METASTORE_DB_HOST: postgres
+      HIVE_METASTORE_DB_NAME: metastore
+      HIVE_METASTORE_DB_USER: hive
+      HIVE_METASTORE_DB_PASS: hivepassword
+    ports:
+      - "9083:9083" # Metastore
+    depends_on:
+      - postgres
+      - hadoop
+    networks:
+      - bigdata-net
+
+  hive-server:
+    image: bde2020/hive:2.3.7-postgresql-metastore
+    container_name: hive-server
+    environment:
+      HIVE_METASTORE_URI: thrift://hive-metastore:9083
+    ports:
+      - "10000:10000" # HiveServer2
+    depends_on:
+      - hive-metastore
+      - hadoop
+    networks:
+      - bigdata-net
+
+  pig:
+    image: bde2020/pig:latest
+    container_name: pig
+    depends_on:
+      - hadoop
+    networks:
+      - bigdata-net
+
+networks:
+  bigdata-net:
+    driver: bridge

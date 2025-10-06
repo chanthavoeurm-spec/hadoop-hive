@@ -1,0 +1,1 @@
+https://github.com/silicoflare/docker-hadoop/blob/amd/Dockerfile
